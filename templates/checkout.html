@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Checkout - Halal Kitchen Utensils Hub{% endblock %}
+{% block content %}
+<!-- Checkout Section -->
+    <section class="py-12 sm:py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">Checkout</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Order Summary -->
+                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                    <h3 class="text-lg sm:text-xl font-semibold mb-4">Order Summary</h3>
+                    <div id="order-items" class="mb-4">
+                        <!-- Order items will be populated by JS -->
+                    </div>
+                    <div class="border-t pt-4">
+                        <div class="flex justify-between font-bold text-base sm:text-lg">
+                            <span>Total</span>
+                            <span>$<span id="order-total">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Checkout Form -->
+                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                    <h3 class="text-lg sm:text-xl font-semibold mb-4">Shipping & Payment</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" id="full-name" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your full name" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                            <input type="text" id="address" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your address" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                            <input type="tel" id="phone" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your phone number" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                            <select id="payment-method" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" required>
+                                <option value="">Select payment method</option>
+                                <option value="credit-card">Credit Card</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="bank-transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <button onclick="placeOrder()" class="bg-halal-green text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition w-full text-center">
+                            Place Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 sm:py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-sm sm:text-base">&copy; 2025 Halal Kitchen Utensils Hub. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Sample Products Data (for consistency with index.html)
+        const products = [
+            {
+                id: 1,
+                name: 'Halal Certified Stainless Steel Pot',
+                price: 29.99,
+                image: 'https://via.placeholder.com/300x200?text=Pot',
+                description: 'Durable and rust-free pot for everyday use.'
+            },
+            {
+                id: 2,
+                name: 'Wooden Spoon Set',
+                price: 12.50,
+                image: 'https://via.placeholder.com/300x200?text=Spoon',
+                description: 'Eco-friendly wooden spoons, set of 4.'
+            },
+            {
+                id: 3,
+                name: 'Ceramic Knife',
+                price: 18.75,
+                image: 'https://via.placeholder.com/300x200?text=Knife',
+                description: 'Sharp ceramic blade, stays sharp longer.'
+            },
+            {
+                id: 4,
+                name: 'Glass Mixing Bowl',
+                price: 15.00,
+                image: 'https://via.placeholder.com/300x200?text=Bowl',
+                description: 'Tempered glass bowl for safe mixing.'
+            },
+            {
+                id: 5,
+                name: 'Silicone Spatula',
+                price: 8.99,
+                image: 'https://via.placeholder.com/300x200?text=Spatula',
+                description: 'Heat-resistant silicone spatula.'
+            },
+            {
+                id: 6,
+                name: 'Halal Chopping Board',
+                price: 22.00,
+                image: 'https://via.placeholder.com/300x200?text=Board',
+                description: 'Bamboo chopping board with halal certification.'
+            }
+        ];
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        // Update Cart UI
+        function updateCartUI() {
+            document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            renderOrderItems();
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+
+        // Render Order Items
+        function renderOrderItems() {
+            const container = document.getElementById('order-items');
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm sm:text-base">Your cart is empty. <a href="index.html#products" class="text-halal-green hover:underline">Continue shopping</a>.</p>';
+                document.getElementById('order-total').textContent = '0';
+                return;
+            }
+            container.innerHTML = cart.map(item => `
+                <div class="flex items-center justify-between py-2 border-b text-sm sm:text-base">
+                    <div class="flex items-center gap-4">
+                        <img src="${item.image}" alt="${item.name}" class="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded">
+                        <div>
+                            <h4 class="font-semibold">${item.name}</h4>
+                            <p class="text-gray-600">$${item.price} x ${item.quantity}</p>
+                        </div>
+                    </div>
+                    <div class="font-semibold">$${(item.price * item.quantity).toFixed(2)}</div>
+                </div>
+            `).join('');
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+            document.getElementById('order-total').textContent = total;
+        }
+
+        // Place Order
+        function placeOrder() {
+            const fullName = document.getElementById('full-name').value;
+            const address = document.getElementById('address').value;
+            const phone = document.getElementById('phone').value;
+            const paymentMethod = document.getElementById('payment-method').value;
+
+            if (!fullName || !address || !phone || !paymentMethod) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            if (cart.length === 0) {
+                alert('Your cart is empty.');
+                return;
+            }
+
+            // Simulate order placement
+            alert(`Order placed successfully!\n\nShipping to: ${fullName}\nAddress: ${address}\nPhone: ${phone}\nPayment Method: ${paymentMethod}\nTotal: $${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}`);
+            
+            // Clear cart after order
+            cart = [];
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartUI();
+        });
+    </script>
+{% endblock %}

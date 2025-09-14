@@ -1,63 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halal Kitchen Utensils Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'halal-green': '#10B981',
-                        'halal-light-green': '#D1FAE5',
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50 font-sans">
+{% extends "base.html" %}
 
-    <!-- Header -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="text-xl sm:text-2xl font-bold text-halal-green">
-                <i class="fas fa-utensils mr-2"></i>
-                Halal Kitchen Hub
-            </div>
-            <nav class="hidden lg:flex space-x-6">
-                <a href="#home" class="text-gray-600 hover:text-halal-green">Home</a>
-                <a href="#products" class="text-gray-600 hover:text-halal-green">Products</a>
-                <a href="#categories" class="text-gray-600 hover:text-halal-green">Categories</a>
-                <a href="#about" class="text-gray-600 hover:text-halal-green">About</a>
-            </nav>
-            <div class="flex items-center space-x-4">
-                <div class="relative">
-                    <button id="cart-btn" class="text-gray-600 hover:text-halal-green relative">
-                        <i class="fas fa-shopping-cart text-lg sm:text-xl"></i>
-                        <span id="cart-count" class="absolute -top-2 -right-2 bg-halal-green text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs">0</span>
-                    </button>
-                </div>
-                <button id="menu-btn" class="lg:hidden text-gray-600 hover:text-halal-green">
-                    <i class="fas fa-bars text-lg sm:text-xl"></i>
-                </button>
-            </div>
-        </div>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden lg:hidden bg-white shadow-md">
-            <nav class="flex flex-col items-center py-4 space-y-4">
-                <a href="#home" class="text-gray-600 hover:text-halal-green">Home</a>
-                <a href="#products" class="text-gray-600 hover:text-halal-green">Products</a>
-                <a href="#categories" class="text-gray-600 hover:text-halal-green">Categories</a>
-                <a href="#about" class="text-gray-600 hover:text-halal-green">About</a>
-            </nav>
-        </div>
-    </header>
+{% block title %}Halal Kitchen Utensils Hub{% endblock %}
 
-    <!-- Hero Section -->
+{% block content %}
+<!-- Hero Section -->
     <section id="home" class="bg-gradient-to-r from-halal-green to-halal-light-green py-12 sm:py-20">
         <div class="container mx-auto px-4 text-center">
             <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4">Welcome to Halal Kitchen Utensils Hub</h1>
@@ -301,6 +247,4 @@
             if (e.target.id === 'cart-modal') closeCart();
         });
     </script>
-
-</body>
-</html>
+{% endblock %}
