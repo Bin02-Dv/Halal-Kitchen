@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Checkout - Halal Kitchen Utensils Hub{% endblock %}
 {% block content %}
+{% load humanize %}
 <!-- Checkout Section -->
     <section class="py-12 sm:py-16">
         <div class="container mx-auto px-4">
@@ -9,13 +10,13 @@
                 <!-- Order Summary -->
                 <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
                     <h3 class="text-lg sm:text-xl font-semibold mb-4">Order Summary</h3>
-                    <div id="order-items" class="mb-4">
+                    <div id="cart-items" class="mb-4">
                         <!-- Order items will be populated by JS -->
                     </div>
                     <div class="border-t pt-4">
                         <div class="flex justify-between font-bold text-base sm:text-lg">
                             <span>Total</span>
-                            <span>$<span id="order-total">0</span></span>
+                            <span>₦<span id="cart-total">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -54,87 +55,161 @@
     </section>
 
     <script>
-        // Sample Products Data (for consistency with index.html)
-        const products = [
-            {
-                id: 1,
-                name: 'Halal Certified Stainless Steel Pot',
-                price: 29.99,
-                image: 'https://via.placeholder.com/300x200?text=Pot',
-                description: 'Durable and rust-free pot for everyday use.'
-            },
-            {
-                id: 2,
-                name: 'Wooden Spoon Set',
-                price: 12.50,
-                image: 'https://via.placeholder.com/300x200?text=Spoon',
-                description: 'Eco-friendly wooden spoons, set of 4.'
-            },
-            {
-                id: 3,
-                name: 'Ceramic Knife',
-                price: 18.75,
-                image: 'https://via.placeholder.com/300x200?text=Knife',
-                description: 'Sharp ceramic blade, stays sharp longer.'
-            },
-            {
-                id: 4,
-                name: 'Glass Mixing Bowl',
-                price: 15.00,
-                image: 'https://via.placeholder.com/300x200?text=Bowl',
-                description: 'Tempered glass bowl for safe mixing.'
-            },
-            {
-                id: 5,
-                name: 'Silicone Spatula',
-                price: 8.99,
-                image: 'https://via.placeholder.com/300x200?text=Spatula',
-                description: 'Heat-resistant silicone spatula.'
-            },
-            {
-                id: 6,
-                name: 'Halal Chopping Board',
-                price: 22.00,
-                image: 'https://via.placeholder.com/300x200?text=Board',
-                description: 'Bamboo chopping board with halal certification.'
-            }
+
+        let cart = [
+            {% for cart in saved_carts %}
+                {
+                    id: {{ cart.id }},
+                    name: "{{ cart.product.product_name }}",
+                    price: {{ cart.product.product_price }},
+                    quantity: {{ cart.quantity }},
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
         ];
 
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-
-        // Update Cart UI
+        // Only one updateCartUI function
         function updateCartUI() {
             document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
-            renderOrderItems();
-            localStorage.setItem('cart', JSON.stringify(cart));
+            saveCartToBackend(); // sync with backend
+            renderCartItems();
         }
 
-        // Render Order Items
-        function renderOrderItems() {
-            const container = document.getElementById('order-items');
+        // Render Cart Items
+        function renderCartItems() {
+            const container = document.getElementById('cart-items');
             if (cart.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm sm:text-base">Your cart is empty. <a href="index.html#products" class="text-halal-green hover:underline">Continue shopping</a>.</p>';
-                document.getElementById('order-total').textContent = '0';
+                container.innerHTML = '<p class="text-gray-500 text-sm sm:text-base">Your cart is empty.</p>';
+                document.getElementById('cart-total').textContent = '0';
                 return;
             }
             container.innerHTML = cart.map(item => `
                 <div class="flex items-center justify-between py-2 border-b text-sm sm:text-base">
-                    <div class="flex items-center gap-4">
-                        <img src="${item.image}" alt="${item.name}" class="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded">
-                        <div>
-                            <h4 class="font-semibold">${item.name}</h4>
-                            <p class="text-gray-600">$${item.price} x ${item.quantity}</p>
-                        </div>
+                    <div>
+                        <h4 class="font-semibold">${item.name}</h4>
+                        <p class="text-gray-600">₦${item.price} x ${item.quantity}</p>
                     </div>
-                    <div class="font-semibold">$${(item.price * item.quantity).toFixed(2)}</div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="updateQuantity(${item.id}, -1)" class="text-gray-500 hover:text-red-500">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)" class="text-gray-500 hover:text-green-500">+</button>
+                        <button onclick="removeFromCart(${item.id})" class="text-red-500 hover:text-red-700 ml-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
-            document.getElementById('order-total').textContent = total;
+            document.getElementById('cart-total').textContent = total;
         }
 
-        // Place Order
-        function placeOrder() {
+        // Add to Cart
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: 1,
+                });
+            }
+            updateCartUI();
+        }
+
+        // Update Quantity
+        function updateQuantity(productId, change) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.quantity += change;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+            updateCartUI();
+        }
+
+        // Remove from Cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        }
+
+        // Cart Modal Functions
+        document.getElementById('cart-btn').addEventListener('click', () => {
+            document.getElementById('cart-modal').classList.remove('hidden');
+            renderCartItems();
+        });
+
+        function closeCart() {
+            document.getElementById('cart-modal').classList.add('hidden');
+        }
+
+        // Scroll to Section
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartUI();
+        });
+
+        // Close modal on outside click
+        document.getElementById('cart-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'cart-modal') closeCart();
+        });
+
+        // Fetch cart from backend on load
+        async function loadCartFromBackend() {
+            try {
+                const response = await fetch('/cart/get/');
+                const data = await response.json();
+                cart = data.cart || [];
+                updateCartUI();
+            } catch (error) {
+                console.error("Error loading cart:", error);
+            }
+        }
+
+        // Save cart to backend
+        async function saveCartToBackend() {
+            try {
+                await fetch('/cart/save/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'), // if CSRF enabled
+                    },
+                    body: JSON.stringify({ cart })
+                });
+            } catch (error) {
+                console.error("Error saving cart:", error);
+            }
+        }
+
+        // Helper: Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Place Order (example - you’ll POST cart + customer info to Django)
+        async function placeOrder() {
             const fullName = document.getElementById('full-name').value;
             const address = document.getElementById('address').value;
             const phone = document.getElementById('phone').value;
@@ -150,24 +225,39 @@
                 return;
             }
 
-            // Simulate order placement
-            alert(`Order placed successfully!\n\nShipping to: ${fullName}\nAddress: ${address}\nPhone: ${phone}\nPayment Method: ${paymentMethod}\nTotal: $${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}`);
-            
-            // Clear cart after order
-            cart = [];
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartUI();
-        }
+            // Send order to backend
+            try {
+                const response = await fetch('/checkout/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        address,
+                        phone,
+                        payment_method: paymentMethod,
+                        cart
+                    })
+                });
 
-        // Mobile Menu Toggle
-        document.getElementById('menu-btn').addEventListener('click', () => {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        });
+                const data = await response.json();
+                alert(`Order placed successfully! Order ID: ${data.order_id}`);
+
+                // Clear cart after order
+                cart = [];
+                updateCartUI();
+
+            } catch (error) {
+                console.error("Error placing order:", error);
+                alert("Something went wrong. Please try again.");
+            }
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            updateCartUI();
+            loadCartFromBackend(); // load saved cart from Django
         });
     </script>
 {% endblock %}

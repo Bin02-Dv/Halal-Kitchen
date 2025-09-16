@@ -3,6 +3,7 @@
 {% block title %}Halal Kitchen Utensils Hub{% endblock %}
 
 {% block content %}
+{% load humanize %}
 <!-- Hero Section -->
     <section id="home" class="bg-gradient-to-r from-halal-green to-halal-light-green py-12 sm:py-20">
         <div class="container mx-auto px-4 text-center">
@@ -53,75 +54,29 @@
         </div>
     </section>
 
-    <!-- Cart Modal -->
-    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl sm:text-2xl font-bold">Shopping Cart</h3>
-                <button onclick="closeCart()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-lg sm:text-xl"></i>
-                </button>
-            </div>
-            <div id="cart-items" class="mb-4">
-                <!-- Cart items will be populated by JS -->
-            </div>
-            <div class="border-t pt-4">
-                <div class="flex flex-col sm:flex-row justify-between items-center font-bold text-base sm:text-lg gap-4">
-                    <span>Total: $<span id="cart-total">0</span></span>
-                    <button class="bg-halal-green text-white px-4 sm:px-6 py-2 rounded hover:bg-green-700 transition w-full sm:w-auto">Checkout</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Sample Products Data
         const products = [
-            {
-                id: 1,
-                name: 'Halal Certified Stainless Steel Pot',
-                price: 29.99,
-                image: 'https://via.placeholder.com/300x200?text=Pot',
-                description: 'Durable and rust-free pot for everyday use.'
-            },
-            {
-                id: 2,
-                name: 'Wooden Spoon Set',
-                price: 12.50,
-                image: 'https://via.placeholder.com/300x200?text=Spoon',
-                description: 'Eco-friendly wooden spoons, set of 4.'
-            },
-            {
-                id: 3,
-                name: 'Ceramic Knife',
-                price: 18.75,
-                image: 'https://via.placeholder.com/300x200?text=Knife',
-                description: 'Sharp ceramic blade, stays sharp longer.'
-            },
-            {
-                id: 4,
-                name: 'Glass Mixing Bowl',
-                price: 15.00,
-                image: 'https://via.placeholder.com/300x200?text=Bowl',
-                description: 'Tempered glass bowl for safe mixing.'
-            },
-            {
-                id: 5,
-                name: 'Silicone Spatula',
-                price: 8.99,
-                image: 'https://via.placeholder.com/300x200?text=Spatula',
-                description: 'Heat-resistant silicone spatula.'
-            },
-            {
-                id: 6,
-                name: 'Halal Chopping Board',
-                price: 22.00,
-                image: 'https://via.placeholder.com/300x200?text=Board',
-                description: 'Bamboo chopping board with halal certification.'
-            }
+            {% for product in products %}
+                {
+                    id: {{ product.id }},
+                    name: "{{ product.product_name|escapejs }}",
+                    price: "{{ product.product_price|floatformat:2|intcomma }}",
+                    image: "{{ product.product_image.url }}",
+                    description: "{{ product.product_description|escapejs }}"
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
         ];
 
-        let cart = [];
+        let cart = [
+            {% for cart in saved_carts %}
+                {
+                    id: {{ cart.id }},
+                    name: "{{ cart.product.product_name }}",
+                    price: {{ cart.product.product_price }},
+                    quantity: {{ cart.quantity }},
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
 
         // Render Products
         function renderProducts() {
@@ -133,7 +88,7 @@
                         <h3 class="text-lg sm:text-xl font-semibold mb-2">${product.name}</h3>
                         <p class="text-gray-600 text-sm sm:text-base mb-4">${product.description}</p>
                         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <span class="text-xl sm:text-2xl font-bold text-halal-green">$${product.price}</span>
+                            <span class="text-xl sm:text-2xl font-bold text-halal-green">₦${product.price}</span>
                             <button onclick="addToCart(${product.id})" class="bg-halal-green text-white px-4 py-2 rounded hover:bg-green-700 transition w-full sm:w-auto">
                                 Add to Cart
                             </button>
@@ -141,18 +96,6 @@
                     </div>
                 </div>
             `).join('');
-        }
-
-        // Add to Cart
-        function addToCart(productId) {
-            const product = products.find(p => p.id === productId);
-            const existingItem = cart.find(item => item.id === productId);
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({ ...product, quantity: 1 });
-            }
-            updateCartUI();
         }
 
         // Update Cart UI
@@ -173,7 +116,7 @@
                 <div class="flex items-center justify-between py-2 border-b text-sm sm:text-base">
                     <div>
                         <h4 class="font-semibold">${item.name}</h4>
-                        <p class="text-gray-600">$${item.price} x ${item.quantity}</p>
+                        <p class="text-gray-600">₦${item.price} x ${item.quantity}</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button onclick="updateQuantity(${item.id}, -1)" class="text-gray-500 hover:text-red-500">-</button>
@@ -233,5 +176,48 @@
         document.getElementById('cart-modal').addEventListener('click', (e) => {
             if (e.target.id === 'cart-modal') closeCart();
         });
+
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+
+            fetch("/cart/add/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"), // CSRF protection
+                },
+                body: JSON.stringify({ product_id: productId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Cart updated:", data);
+
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({ ...product, quantity: 1 });
+                }
+
+                updateCartUI(); // refresh cart UI
+            })
+            .catch(error => console.error("Error updating cart:", error));
+        }
+        // Helper to get CSRF token from Django cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
     </script>
 {% endblock %}

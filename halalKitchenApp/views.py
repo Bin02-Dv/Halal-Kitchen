@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib import auth
 from . import models
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 # Create your views here.
 
@@ -9,11 +11,34 @@ def logout(request):
     auth.logout(request)
     return redirect('/login/')
 
+def about(request):
+    current_user = request.user
+    products = models.Product.objects.all()
+
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
+
+    context = {
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts, 
+    }
+    return render(request, "about.html", context)
+
 
 def index(request):
     current_user = request.user
+    products = models.Product.objects.all()
+
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
+
     context = {
-        "current_user": current_user
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts, 
     }
     return render(request, "index.html", context)
 
@@ -24,10 +49,47 @@ def cart(request):
     }
     return render(request, "cart.html", context)
 
+@csrf_exempt
 def checkout(request):
     current_user = request.user
+    products = models.Product.objects.all()
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
+        
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        full_name = data.get("full_name")
+        address = data.get("address")
+        phone = data.get("phone")
+        payment_method = data.get("payment_method")
+        cart = data.get("cart", [])
+
+        # Create Order
+        order = models.Order.objects.create(
+            full_name=full_name,
+            address=address,
+            phone=phone,
+            payment_method=payment_method,
+        )
+
+        # Create Order Items
+        for item in cart:
+            product = models.Product.objects.get(id=item["id"])
+            models.OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=item["quantity"],
+                price=product.product_price
+            )
+        saved_carts.delete()
+
+        return JsonResponse({"success": True, "order_id": order.id})
     context = {
-        "current_user": current_user
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts
     }
     return render(request, "checkout.html", context)
 
@@ -63,8 +125,14 @@ def login(request):
 
 def products(request):
     current_user = request.user
+    products = models.Product.objects.all()
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
     context = {
-        "current_user": current_user
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts
     }
     return render(request, "products.html", context)
 
@@ -135,3 +203,34 @@ def register(request):
         "current_user": current_user
     }
     return render(request, "register.html", context)
+
+@csrf_exempt
+def add_to_cart(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        product_id = data.get("product_id", 0)
+        user = request.user
+
+        try:
+            
+            product = models.Product.objects.get(id=product_id)
+            cart_item, created = models.CartItem.objects.get_or_create(user=user, product=product)
+        except models.Product.DoesNotExist:
+            pass
+
+        if not created:
+            cart_item.quantity += 1
+        cart_item.save()
+
+        return JsonResponse({"message": "Added to cart", "quantity": cart_item.quantity})
+
+@csrf_exempt
+def save_cart(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        request.session["cart"] = data.get("cart", [])
+        return JsonResponse({"message": "Cart saved successfully"})
+    
+def get_cart(request):
+    cart = request.session.get("cart", [])
+    return JsonResponse({"cart": cart})
