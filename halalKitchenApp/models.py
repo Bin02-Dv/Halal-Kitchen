@@ -10,7 +10,6 @@ class AuthModel(AbstractUser):
     email = models.CharField(max_length=200, blank=True, unique=True)
     phone_number = models.CharField(max_length=20, blank=True)
     state = models.CharField(max_length=100, blank=True)
-    password = models.CharField(max_length=50, blank=True)
     
     username = models.CharField(max_length=50, blank=True, unique=True)
 

@@ -64,6 +64,8 @@ $(document).on('submit', '#login', function (e){
                     $(".toast").fadeOut();
                 }, 5000);
 
+                window.location.href = '/'
+
             }else{
                 m_error.show();
                 m_success.hide();

@@ -190,7 +190,7 @@ def register(request):
                 "success": False
             })
         else:
-            models.AuthModel.objects.create_superuser(
+            models.AuthModel.objects.create_user(
                 full_name=full_name, email=email, phone_number=phone_number, state=state,
                 password=password, username=email
             )
