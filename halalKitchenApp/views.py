@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 import json
+from django.db.models import Sum
 
 # Create your views here.
 
@@ -32,6 +33,7 @@ def dash(request):
     current_user = request.user
     products = models.Product.objects.all()
     users = models.AuthModel.objects.all().exclude(is_superuser=True)
+    total_order = models.OrderItem.objects.aggregate(total_price=Sum('price'))['total_price']
 
     saved_carts = None
     if request.user.is_authenticated:
@@ -41,7 +43,8 @@ def dash(request):
         "current_user": current_user,
         "products": products,
         "saved_carts": saved_carts,
-        "users": users
+        "users": users,
+        "total_order": total_order
     }
     return render(request, 'dashboard.html', context)
 
@@ -95,16 +98,20 @@ def checkout(request):
 
         # Create Order Items
         for item in cart:
-            product = models.Product.objects.get(id=item["id"])
+            product = models.Product.objects.get(id=item["product_id"])
             models.OrderItem.objects.create(
                 order=order,
                 product=product,
                 quantity=item["quantity"],
                 price=product.product_price
             )
-        saved_carts.delete()
+
+        # Clear saved cart if exists
+        if saved_carts:
+            saved_carts.delete()
 
         return JsonResponse({"success": True, "order_id": order.id})
+
     context = {
         "current_user": current_user,
         "products": products,
@@ -253,3 +260,14 @@ def save_cart(request):
 def get_cart(request):
     cart = request.session.get("cart", [])
     return JsonResponse({"cart": cart})
+
+@csrf_exempt
+def delete_product(request, product_id):
+    if request.method == "DELETE":
+        try:
+            product = models.Product.objects.get(id=product_id)
+            product.delete()
+            return JsonResponse({"success": True, "message": "Product deleted"})
+        except models.Product.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Product not found"}, status=404)
+    return JsonResponse({"success": False, "message": "Invalid request"}, status=400)

@@ -82,7 +82,7 @@
                 <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 text-center">
                     <i class="fas fa-naira-sign text-2xl sm:text-3xl text-halal-green mb-3"></i>
                     <h3 class="text-base sm:text-lg font-semibold mb-2">Total Orders</h3>
-                    <p id="total-orders" class="text-xl sm:text-2xl font-bold text-gray-800">0</p>
+                    <p id="total-orders" class="text-xl sm:text-2xl font-bold text-gray-800">{{ total_order|floatformat:2|intcomma  }}</p>
                 </div>
                 <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 text-center">
                     <i class="fas fa-users text-2xl sm:text-3xl text-halal-green mb-3"></i>
@@ -137,7 +137,7 @@
             document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('total-products').textContent = products.length;
             document.getElementById('cart-items').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('total-orders').textContent = orders.length;
+            //document.getElementById('total-orders').textContent = orders.length;
             document.getElementById('total-users').textContent = users.length;
             renderProducts();
         }
@@ -155,9 +155,7 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="editProduct(${product.id})" class="text-halal-green hover:text-green-700">
-                            <i class="fas fa-edit text-sm"></i>
-                        </button>
+                        {% csrf_token %}
                         <button onclick="deleteProduct(${product.id})" class="text-red-500 hover:text-red-700">
                             <i class="fas fa-trash text-sm"></i>
                         </button>
@@ -165,6 +163,37 @@
                 </div>
             `).join('');
         }
+
+        async function deleteProduct(productId) {
+            if (!confirm("Are you sure you want to delete this product?")) return;
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch(`/products/delete/${productId}/`, {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRFToken": csrfToken,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert("Product deleted successfully!");
+                    // Remove product from frontend list
+                    var products = products.filter(p => p.id !== productId);
+                    renderProducts();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Something went wrong!");
+            }
+        }
+
 
 
         // Mobile Menu Toggle
