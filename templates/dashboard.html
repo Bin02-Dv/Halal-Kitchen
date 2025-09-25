@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Halal Kitchen Utensils Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'halal-green': '#10B981',
+                        'halal-light-green': '#D1FAE5',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans flex">
+
+    {% load humanize %}
+
+    <!-- Sidebar Navigation -->
+    <aside class="bg-white w-64 min-h-screen shadow-md fixed top-0 left-0 z-50 lg:relative -translate-x-full lg:translate-x-0 transition-transform duration-300">
+        <div class="p-4">
+            <div class="text-xl font-bold text-halal-green mb-6">
+                <i class="fas fa-utensils mr-2"></i>
+                Halal Kitchen Hub
+            </div>
+            <nav class="space-y-2">
+                <a href="/dash/" class="flex items-center px-4 py-2 text-gray-600 hover:bg-halal-light-green hover:text-halal-green rounded">
+                    <i class="fas fa-tachometer-alt mr-2"></i>
+                    Dashboard
+                </a>
+                <a href="/add-product/" class="flex items-center px-4 py-2 text-gray-600 hover:bg-halal-light-green hover:text-halal-green rounded">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Add Product
+                </a>
+                <a href="/" class="flex items-center px-4 py-2 text-gray-600 hover:bg-halal-light-green hover:text-halal-green rounded">
+                    <i class="fas fa-home mr-2"></i>
+                    Home
+                </a>
+                <a href="/checkout/" class="flex items-center px-4 py-2 text-gray-600 hover:bg-halal-light-green hover:text-halal-green rounded relative">
+                    <i class="fas fa-shopping-cart mr-2"></i>
+                    Pending Checkout
+                    <span id="cart-count" class="absolute right-4 bg-halal-green text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
+                </a>
+                <a href="/logout/" class="flex items-center px-4 py-2 text-gray-600 hover:bg-halal-light-green hover:text-halal-green rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    Logout
+                </a>
+            </nav>
+        </div>
+        <!-- Mobile Menu Toggle -->
+        <button id="menu-btn" class="lg:hidden p-4">
+            <i class="fas fa-bars text-xl text-halal-green"></i>
+        </button>
+    </aside>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar" class="fixed inset-0 bg-black bg-opacity-50 hidden lg:hidden z-40"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 sm:p-6 lg:ml-64">
+        <div id="auth-check" class="max-w-5xl mx-auto">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">Admin Dashboard</h2>
+            <!-- Statistics -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
+                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 text-center">
+                    <i class="fas fa-boxes text-2xl sm:text-3xl text-halal-green mb-3"></i>
+                    <h3 class="text-base sm:text-lg font-semibold mb-2">Total Products</h3>
+                    <p id="total-products" class="text-xl sm:text-2xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 text-center">
+                    <i class="fas fa-shopping-cart text-2xl sm:text-3xl text-halal-green mb-3"></i>
+                    <h3 class="text-base sm:text-lg font-semibold mb-2">Items in Cart</h3>
+                    <p id="cart-items" class="text-xl sm:text-2xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 text-center">
+                    <i class="fas fa-naira-sign text-2xl sm:text-3xl text-halal-green mb-3"></i>
+                    <h3 class="text-base sm:text-lg font-semibold mb-2">Total Orders</h3>
+                    <p id="total-orders" class="text-xl sm:text-2xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 text-center">
+                    <i class="fas fa-users text-2xl sm:text-3xl text-halal-green mb-3"></i>
+                    <h3 class="text-base sm:text-lg font-semibold mb-2">Total Users</h3>
+                    <p id="total-users" class="text-xl sm:text-2xl font-bold text-gray-800">0</p>
+                </div>
+            </div>
+            <!-- Product Management -->
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h3 class="text-base sm:text-lg font-semibold mb-4">Manage Products</h3>
+                <div id="products-list" class="space-y-4">
+                    <!-- Products will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const products = [
+            {% for product in products %}
+                {
+                    id: {{ product.id }},
+                    name: "{{ product.product_name|escapejs }}",
+                    price: "{{ product.product_price|floatformat:2|intcomma }}",
+                    image: "{{ product.product_image.url }}",
+                    description: "{{ product.product_description|escapejs }}"
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        let users = [
+            {% for user in users %}
+                {
+                    id: {{ user.id }}
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]; 
+        let cart = [
+            {% for cart in saved_carts %}
+                {
+                    id: {{ cart.id }},
+                    name: "{{ cart.product.product_name }}",
+                    price: {{ cart.product.product_price }},
+                    quantity: {{ cart.quantity }},
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        let orders = JSON.parse(localStorage.getItem('orders')) || [];
+
+        // Update Dashboard UI
+        function updateDashboardUI() {
+            document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('total-products').textContent = products.length;
+            document.getElementById('cart-items').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('total-orders').textContent = orders.length;
+            document.getElementById('total-users').textContent = users.length;
+            renderProducts();
+        }
+
+        // Render Products
+        function renderProducts() {
+            const container = document.getElementById('products-list');
+            container.innerHTML = products.map(product => `
+                <div class="flex flex-col sm:flex-row items-center justify-between py-3 border-b gap-4">
+                    <div class="flex items-center gap-3">
+                        <img src="${product.image}" alt="${product.name}" class="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded">
+                        <div>
+                            <h4 class="font-semibold text-sm sm:text-base">${product.name}</h4>
+                            <p class="text-gray-600 text-xs sm:text-sm">₦${product.price}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="editProduct(${product.id})" class="text-halal-green hover:text-green-700">
+                            <i class="fas fa-edit text-sm"></i>
+                        </button>
+                        <button onclick="deleteProduct(${product.id})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            const sidebar = document.querySelector('aside');
+            const overlay = document.getElementById('mobile-sidebar');
+            sidebar.classList.toggle('translate-x-0');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
+
+        // Close mobile sidebar on overlay click
+        document.getElementById('mobile-sidebar').addEventListener('click', () => {
+            const sidebar = document.querySelector('aside');
+            const overlay = document.getElementById('mobile-sidebar');
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('aside').classList.add('-translate-x-full', 'lg:translate-x-0');
+            updateDashboardUI();
+        });
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ from django.contrib import auth
 from . import models
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 import json
 
 # Create your views here.
@@ -22,9 +23,27 @@ def about(request):
     context = {
         "current_user": current_user,
         "products": products,
-        "saved_carts": saved_carts, 
+        "saved_carts": saved_carts
     }
     return render(request, "about.html", context)
+
+@login_required(login_url='/login/')
+def dash(request):
+    current_user = request.user
+    products = models.Product.objects.all()
+    users = models.AuthModel.objects.all().exclude(is_superuser=True)
+
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
+
+    context = {
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts,
+        "users": users
+    }
+    return render(request, 'dashboard.html', context)
 
 
 def index(request):
