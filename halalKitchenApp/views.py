@@ -80,33 +80,43 @@ def checkout(request):
         saved_carts = models.CartItem.objects.filter(user=current_user)
         
     if request.method == "POST":
+        # If using JSON (no file upload)
         data = json.loads(request.body)
 
         full_name = data.get("full_name")
         address = data.get("address")
         phone = data.get("phone")
         payment_method = data.get("payment_method")
+        receipt = data.get("receipt")
         cart = data.get("cart", [])
-
-        # Create Order
+        
+        # Create Order with Pending status
         order = models.Order.objects.create(
             full_name=full_name,
             address=address,
             phone=phone,
             payment_method=payment_method,
+            status='Pending',
+            receipt=receipt
         )
 
+        total = 0
         # Create Order Items
         for item in cart:
-            product = models.Product.objects.get(id=item["product_id"])
+            product = models.Product.objects.get(id=item["product_id"])  # ensure JS sends `id`
             models.OrderItem.objects.create(
                 order=order,
                 product=product,
                 quantity=item["quantity"],
                 price=product.product_price
             )
+            total += product.product_price * item["quantity"]
 
-        # Clear saved cart if exists
+        # Save total amount
+        order.total = total
+        order.save()
+
+        # Clear saved cart
         if saved_carts:
             saved_carts.delete()
 
@@ -271,3 +281,30 @@ def delete_product(request, product_id):
         except models.Product.DoesNotExist:
             return JsonResponse({"success": False, "message": "Product not found"}, status=404)
     return JsonResponse({"success": False, "message": "Invalid request"}, status=400)
+
+def all_payments(request):
+    current_user = request.user
+    products = models.Product.objects.all()
+    users = models.AuthModel.objects.all().exclude(is_superuser=True)
+    orders = models.Order.objects.all()
+    total_order = models.OrderItem.objects.aggregate(total_price=Sum('price'))['total_price']
+
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
+
+    context = {
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts,
+        "users": users,
+        "total_order": total_order,
+        "orders": orders,
+    }
+    return render(request, "all-payments.html", context)
+
+def approve(request, id):
+    order = models.Order.objects.filter(id=id).first()
+    order.status = 'Completed'
+    order.save()
+    return redirect('/all-payments/')

@@ -4,55 +4,75 @@
 {% load humanize %}
 <!-- Checkout Section -->
     <section class="py-12 sm:py-16">
-        <div class="container mx-auto px-4">
-            <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">Checkout</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Order Summary -->
-                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-                    <h3 class="text-lg sm:text-xl font-semibold mb-4">Order Summary</h3>
-                    <div id="cart-items" class="mb-4">
-                        <!-- Order items will be populated by JS -->
-                    </div>
-                    <div class="border-t pt-4">
-                        <div class="flex justify-between font-bold text-base sm:text-lg">
-                            <span>Total</span>
-                            <span>₦<span id="cart-total">0</span></span>
-                        </div>
-                    </div>
+    <div class="container mx-auto px-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">Checkout</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Order Summary -->
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-semibold mb-4">Order Summary</h3>
+                <div id="cart-items" class="mb-4">
+                    <!-- Order items will be populated by JS -->
                 </div>
-                <!-- Checkout Form -->
-                <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
-                    <h3 class="text-lg sm:text-xl font-semibold mb-4">Shipping & Payment</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                            <input type="text" id="full-name" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your full name" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                            <input type="text" id="address" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your address" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                            <input type="tel" id="phone" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your phone number" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                            <select id="payment-method" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" required>
-                                <option value="">Select payment method</option>
-                                <option value="credit-card">Credit Card</option>
-                                <option value="paypal">PayPal</option>
-                                <option value="bank-transfer">Bank Transfer</option>
-                            </select>
-                        </div>
-                        <button onclick="placeOrder()" class="bg-halal-green text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition w-full text-center">
-                            Place Order
-                        </button>
+                <div class="border-t pt-4">
+                    <div class="flex justify-between font-bold text-base sm:text-lg">
+                        <span>Total</span>
+                        <span>₦<span id="cart-total">0</span></span>
                     </div>
                 </div>
             </div>
+
+            <!-- Checkout Form -->
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-semibold mb-4">Shipping & Payment</h3>
+                <div class="space-y-4">
+                    
+                    <!-- Customer Info -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="full-name" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your full name" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input type="text" id="address" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your address" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="tel" id="phone" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" placeholder="Enter your phone number" required>
+                    </div>
+
+                    <!-- Payment Info -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                        <select id="payment-method" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-halal-green" required>
+                            <option value="bank-transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+
+                    <!-- Bank Account Details -->
+                    <div id="account-details" class="bg-gray-100 p-4 rounded-lg mt-4">
+                        <h4 class="text-md font-semibold mb-2">Bank Account Details</h4>
+                        <p class="text-sm text-gray-700">Bank: Access Bank</p>
+                        <p class="text-sm text-gray-700">Account Name: Halal Foods</p>
+                        <p class="text-sm text-gray-700">Account Number: 1234567890</p>
+                        {% comment %} <p class="text-sm text-gray-700">Amount: ₦<span id="account-total">0</span></p> {% endcomment %}
+                    </div>
+
+                    <!-- Upload Receipt -->
+                    <div id="upload-receipt" class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Upload Payment Receipt</label>
+                        <input type="file" id="receipt" name="receipt" accept="image/*,application/pdf" class="w-full text-sm text-gray-700 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-halal-green">
+                    </div>
+
+                    <!-- Place Order Button -->
+                    <button onclick="placeOrder()" class="bg-halal-green text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition w-full text-center mt-4">
+                        Place Order
+                    </button>
+                </div>
+            </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <script>
 
@@ -214,6 +234,7 @@
             const address = document.getElementById('address').value;
             const phone = document.getElementById('phone').value;
             const paymentMethod = document.getElementById('payment-method').value;
+            const receipt = document.getElementById('receipt').value;
 
             if (!fullName || !address || !phone || !paymentMethod) {
                 alert('Please fill in all fields.');
@@ -238,7 +259,8 @@
                         address,
                         phone,
                         payment_method: paymentMethod,
-                        cart
+                        cart,
+                        receipt
                     })
                 });
 
