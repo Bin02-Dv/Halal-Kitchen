@@ -80,15 +80,12 @@ def checkout(request):
         saved_carts = models.CartItem.objects.filter(user=current_user)
         
     if request.method == "POST":
-        # If using JSON (no file upload)
-        data = json.loads(request.body)
-
-        full_name = data.get("full_name")
-        address = data.get("address")
-        phone = data.get("phone")
-        payment_method = data.get("payment_method")
-        receipt = data.get("receipt")
-        cart = data.get("cart", [])
+        full_name = request.POST.get("full_name")
+        address = request.POST.get("address")
+        phone = request.POST.get("phone")
+        payment_method = request.POST.get("payment_method")
+        cart = json.loads(request.POST.get("cart", "[]"))
+        receipt = request.FILES.get("receipt")  # ✅ Handle file correctly
         
         # Create Order with Pending status
         order = models.Order.objects.create(
@@ -97,13 +94,13 @@ def checkout(request):
             phone=phone,
             payment_method=payment_method,
             status='Pending',
-            receipt=receipt
+            receipt=receipt  # ✅ file saved to MEDIA_ROOT automatically
         )
 
         total = 0
         # Create Order Items
         for item in cart:
-            product = models.Product.objects.get(id=item["product_id"])  # ensure JS sends `id`
+            product = models.Product.objects.get(id=item["product_id"])
             models.OrderItem.objects.create(
                 order=order,
                 product=product,
@@ -112,11 +109,9 @@ def checkout(request):
             )
             total += product.product_price * item["quantity"]
 
-        # Save total amount
         order.total = total
         order.save()
 
-        # Clear saved cart
         if saved_carts:
             saved_carts.delete()
 
@@ -128,6 +123,7 @@ def checkout(request):
         "saved_carts": saved_carts
     }
     return render(request, "checkout.html", context)
+
 
 def login(request):
     if request.method == 'POST':
@@ -172,22 +168,36 @@ def products(request):
     }
     return render(request, "products.html", context)
 
+def view_products_by_category(request, category):
+    current_user = request.user
+    products = models.Product.objects.filter(product_category=category)
+    saved_carts = None
+    if request.user.is_authenticated:
+        saved_carts = models.CartItem.objects.filter(user=current_user)
+    context = {
+        "current_user": current_user,
+        "products": products,
+        "saved_carts": saved_carts
+    }
+    return render(request, "products.html", context)
+
 def add_product(request):
     current_user = request.user
     if request.method == 'POST':
         product_name = request.POST.get("product_name")
+        category = request.POST.get("category")
         product_price = request.POST.get("product_price")
         product_description = request.POST.get("product_description")
         product_image = request.FILES.get("product_image")
         
-        if not all([product_name, product_price, product_description, product_image]):
+        if not all([product_name, product_price, product_description, product_image, category]):
             return JsonResponse({
                 "message": "Sorry All fields are required!!",
                 "success": False
             })
         else:
             models.Product.objects.create(
-                product_name=product_image, product_price=product_price, product_description=product_description,
+                product_name=product_name, product_category=category, product_price=product_price, product_description=product_description,
                 product_image=product_image
             )
             return JsonResponse({
@@ -286,7 +296,7 @@ def all_payments(request):
     current_user = request.user
     products = models.Product.objects.all()
     users = models.AuthModel.objects.all().exclude(is_superuser=True)
-    orders = models.Order.objects.all()
+    orders = models.Order.objects.all().order_by('-id')
     total_order = models.OrderItem.objects.aggregate(total_price=Sum('price'))['total_price']
 
     saved_carts = None

@@ -228,54 +228,53 @@
             return cookieValue;
         }
 
-        // Place Order (example - you’ll POST cart + customer info to Django)
         async function placeOrder() {
-            const fullName = document.getElementById('full-name').value;
-            const address = document.getElementById('address').value;
-            const phone = document.getElementById('phone').value;
-            const paymentMethod = document.getElementById('payment-method').value;
-            const receipt = document.getElementById('receipt').value;
+        const fullName = document.getElementById('full-name').value;
+        const address = document.getElementById('address').value;
+        const phone = document.getElementById('phone').value;
+        const paymentMethod = document.getElementById('payment-method').value;
+        const receiptFile = document.getElementById('receipt').files[0]; // ✅ the actual file
 
-            if (!fullName || !address || !phone || !paymentMethod) {
-                alert('Please fill in all fields.');
-                return;
-            }
-
-            if (cart.length === 0) {
-                alert('Your cart is empty.');
-                return;
-            }
-
-            // Send order to backend
-            try {
-                const response = await fetch('/checkout/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                    body: JSON.stringify({
-                        full_name: fullName,
-                        address,
-                        phone,
-                        payment_method: paymentMethod,
-                        cart,
-                        receipt
-                    })
-                });
-
-                const data = await response.json();
-                alert(`Order placed successfully! Order ID: ${data.order_id}`);
-
-                // Clear cart after order
-                cart = [];
-                updateCartUI();
-
-            } catch (error) {
-                console.error("Error placing order:", error);
-                alert("Something went wrong. Please try again.");
-            }
+        if (!fullName || !address || !phone || !paymentMethod) {
+            alert('Please fill in all fields.');
+            return;
         }
+
+        if (cart.length === 0) {
+            alert('Your cart is empty.');
+            return;
+        }
+
+        // Use FormData instead of JSON
+        const formData = new FormData();
+        formData.append('full_name', fullName);
+        formData.append('address', address);
+        formData.append('phone', phone);
+        formData.append('payment_method', paymentMethod);
+        formData.append('cart', JSON.stringify(cart)); // convert array to string
+        if (receiptFile) formData.append('receipt', receiptFile);
+
+        try {
+            const response = await fetch('/checkout/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData // ✅ send FormData (not JSON)
+            });
+
+            const data = await response.json();
+            alert(`Order placed successfully! Order ID: ${data.order_id}`);
+
+            // Clear cart after order
+            cart = [];
+            updateCartUI();
+
+        } catch (error) {
+            console.error("Error placing order:", error);
+            alert("Something went wrong. Please try again.");
+        }
+    }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {

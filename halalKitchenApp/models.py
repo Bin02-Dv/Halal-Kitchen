@@ -21,6 +21,7 @@ class AuthModel(AbstractUser):
 class Product(models.Model):
     
     product_name = models.CharField(max_length=100, blank=True)
+    product_category = models.CharField(max_length=100, blank=True)
     product_price = models.DecimalField(decimal_places=2, default=0.00, max_digits=10)
     product_description = models.TextField(max_length=200, blank=True)
     product_image = models.ImageField(upload_to='product-images/', blank=True)
